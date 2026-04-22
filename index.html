@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+    margin:0;
+    font-family: Georgia, serif;
+    background: radial-gradient(circle at top, #1e3a8a, #0a1f4d);
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    padding-top:30px;
+    height:100vh;
+    overflow:hidden;
+    color:#ffffff;
+}
+
+.app {
+    width:95%;
+    max-width:420px;
+    padding:18px 16px 12px;
+    border-radius:30px;
+    background: linear-gradient(145deg, #2c4fb3, #1e3a8a);
+    box-shadow: 0 0 30px rgba(0,0,0,0.4);
+    display:flex;
+    flex-direction:column;
+}
+
+/* HEADER */
+.header { text-align:center; margin-bottom:6px; }
+.header h1 { margin:0; font-size:20px; }
+.header h2 { margin:2px; font-size:13px; }
+.header h3 { margin:0; font-size:10px; opacity:0.6; }
+
+/* PROGRESS */
+.progress-bar {
+    height:5px;
+    background:#1a2d6b;
+    border-radius:10px;
+    margin:8px 0;
+}
+.progress {
+    height:100%;
+    width:0%;
+    background:linear-gradient(90deg, #6fb6ff, #ffffff);
+}
+.progress-text {
+    font-size:10px;
+    text-align:right;
+}
+
+/* KAPITEL */
+.chapter-scroll {
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding:6px 0;
+}
+.chapter {
+    min-width:80px;
+    height:38px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#ffffff;
+    color:#0a1f4d;
+    border-radius:10px;
+    font-size:11px;
+}
+.chapter.active {
+    background:#6fb6ff;
+    box-shadow:0 0 10px #6fb6ff;
+}
+
+/* MITTELBEREICH */
+.visual {
+    height:150px;
+    margin:10px 0;
+    border-radius:18px;
+    position:relative;
+    overflow:hidden;
+    cursor:pointer;
+}
+
+.title-overlay {
+    position:absolute;
+    inset:0;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    font-size:20px;
+}
+
+/* SCHNEE */
+.snowflake {
+    position:absolute;
+    top:-10px;
+    width:5px;
+    height:5px;
+    background:white;
+    border-radius:50%;
+    box-shadow:0 0 8px white;
+    animation: fall linear infinite;
+}
+@keyframes fall { to { transform:translateY(170px); } }
+
+/* BUTTONS */
+.controls { display:flex; gap:6px; }
+.btn {
+    flex:1;
+    padding:10px;
+    border-radius:10px;
+    background:#ffffff;
+    color:#0a1f4d;
+    border:2px solid #6fb6ff;
+}
+
+/* FOOTER */
+.footer {
+    font-size:9px;
+    margin-top:8px;
+    position:relative;
+}
+.footer-line {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-size:10px;
+}
+.footer-center {
+    position:absolute;
+    left:50%;
+    transform:translateX(-50%);
+    pointer-events:none;
+}
+.footer-bottom {
+    text-align:center;
+    margin-top:4px;
+}
+
+/* MODAL */
+.modal {
+    position:fixed;
+    inset:0;
+    background:#0a1f4d;
+    display:none;
+    justify-content:center;
+    align-items:center;
+}
+.modal-content {
+    width:85%;
+    max-width:320px;
+    background:#ffffff;
+    padding:20px;
+    border-radius:16px;
+    color:#2a2a2a;
+    line-height:1.5;
+}
+.modal-title {
+    font-size:18px;
+    font-weight:bold;
+    text-align:center;
+    margin-bottom:12px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<div class="header">
+    <h1>Frau Holle</h1>
+    <h2>Premium Edition</h2>
+    <h3>Version 2.9.7</h3>
+</div>
+
+<div class="progress-bar">
+    <div class="progress" id="progress"></div>
+</div>
+<div class="progress-text" id="progressText">0%</div>
+
+<div class="chapter-scroll" id="chapters"></div>
+
+<div class="visual" onclick="next()">
+    <div class="title-overlay">
+        Frau Holle<br>oder der Schlüssel zum Glück
+    </div>
+</div>
+
+<div class="controls">
+    <button class="btn" onclick="prev()">◀</button>
+    <button class="btn" onclick="start()">Start</button>
+    <button class="btn" onclick="stop()">Stopp</button>
+    <button class="btn" onclick="next()">▶</button>
+</div>
+
+<div class="footer">
+    <div class="footer-line">
+        <span onclick="openModal('impressum')">Impressum</span>
+        <span class="footer-center">Ella Pinorella Verlag</span>
+        <span onclick="openModal('datenschutz')">Datenschutz</span>
+    </div>
+    <div class="footer-bottom">
+        Hörbuch App Premium Edition
+    </div>
+</div>
+
+</div>
+
+<div class="modal" id="modal" onclick="closeModal()">
+    <div class="modal-content" id="modalContent" onclick="event.stopPropagation()"></div>
+</div>
+
+<script>
+
+const storyTitle = "Frau Holle... oder der Schlüssel zum Glück...";
+
+const chapters = ["Kapitel eins... Die zwei Maries und das Spinnrad... " +
+"Es war einmal ein kleines Haus am Rand eines Dorfes... kein großes Haus... kein armes Haus... " +
+"aber ein Haus, in dem man spürte... dass nicht alle Herzen gleich warm schlugen... " +
+"In diesem Haus lebten eine Frau und zwei Mädchen... beide hießen Marie... " +
+"doch sie waren so verschieden... wie ein Sommertag und ein Regentag... " +
+"Die eine war freundlich... hilfsbereit... aufmerksam... " +
+"die andere liebte es bequem... und ließ andere für sich arbeiten...",
+
+"Kapitel zwei... Das Spinnrad... " +
+"Die fleißige Marie arbeitete jeden Tag... sie fegte... sie holte Wasser... sie spann Garn... " +
+"das alte Spinnrad surrte leise... Stunde um Stunde... " +
+"ihre Hände wurden müde... ihre Finger wund... " +
+"doch die Stiefmutter rief nur... mehr Garn... keine Pause... " +
+"und so drehte sich das Rad weiter... immer weiter...",
+
+"Kapitel drei... Der Brunnen... " +
+"An einem Tag... glitt Marie die Spule aus der Hand... " +
+"sie rollte über den Boden... und fiel... plumps... in den Brunnen... " +
+"die Stiefmutter wurde wütend... und befahl... hol sie zurück... " +
+"Marie stand am Rand... der Brunnen war tief... dunkel... still... " +
+"sie hatte Angst... doch sie wusste... es gab keinen anderen Weg... " +
+"sie schloss die Augen... und sprang...",
+
+"Kapitel vier... Eine andere Welt... " +
+"Marie fiel... und fiel... bis sie auf einer grünen Wiese erwachte... " +
+"Blumen blühten... die Sonne war warm... alles war still und freundlich... " +
+"ein Ofen rief... zieh mich raus... ich bin fertig... " +
+"Marie half... holte die Brote heraus... vorsichtig... liebevoll... " +
+"dann bat ein Apfelbaum... schüttle mich... " +
+"und sie tat es... bis alle Äpfel gesammelt waren...",
+
+"Kapitel fünf... Frau Holle... " +
+"Schließlich kam Marie zu einem Haus... dort lebte Frau Holle... " +
+"sie sprach ruhig... bleib bei mir... wenn du fleißig bist... wird es dir gut gehen... " +
+"Marie arbeitete... sie kochte... sie fegte... sie schüttelte das Bett... " +
+"und wenn die Federn flogen... begann es auf der Welt zu schneien... " +
+"Frau Holle war streng... aber gerecht...",
+
+"Kapitel sechs... Gold und Pech... " +
+"Als Marie nach Hause wollte... führte Frau Holle sie zu einem Tor... " +
+"und Gold fiel über sie... als Lohn für ihre Arbeit... " +
+"zu Hause staunten alle... und die andere Marie wollte es auch... " +
+"sie ging denselben Weg... aber sie half nicht... " +
+"sie ließ die Brote... sie ließ die Äpfel... sie arbeitete nicht... " +
+"und als sie ging... fiel Pech auf sie herab...",
+
+"Kapitel sieben... Der Zauberschlüssel... " +
+"Am Ende wurde es still... wie nach einem Schneefall... " +
+"und etwas blieb zurück... ein unsichtbarer Schlüssel... " +
+"der Schlüssel liegt im Tun... nicht im Wünschen... " +
+"Goldmarie handelte... ohne an Lohn zu denken... " +
+"Pechmarie wollte... ohne zu handeln... " +
+"und so zeigte das Leben... jedem seinen Spiegel... " +
+"was man tut... kehrt zu einem zurück... " +
+"und so entsteht... das eigene Glück..."
+];
+
+let current=0, playing=false;
+
+function update(){
+ let p=Math.round((current+1)/chapters.length*100);
+ document.getElementById("progress").style.width=p+"%";
+ document.getElementById("progressText").innerText=p+"%";
+ render();
+}
+
+function render(){
+ const c=document.getElementById("chapters");
+ c.innerHTML="";
+ chapters.forEach((t,i)=>{
+  let d=document.createElement("div");
+  d.className="chapter"+(i===current?" active":"");
+  d.innerText="Kapitel "+(i+1);
+  d.onclick=()=>{current=i; speak(); update();};
+  c.appendChild(d);
+ });
+}
+
+function speak(){
+ speechSynthesis.cancel();
+ let text = current===0 ? storyTitle+" "+chapters[current] : chapters[current];
+ let u=new SpeechSynthesisUtterance(text);
+ u.lang="de-DE";
+ u.onend=()=>{ if(playing && current<chapters.length-1){ current++; update(); speak(); }};
+ speechSynthesis.speak(u);
+}
+
+function start(){current=0;playing=true;update();speak();}
+function stop(){playing=false;speechSynthesis.cancel();}
+function next(){if(current<chapters.length-1){current++;update();speak();}}
+function prev(){if(current>0){current--;update();speak();}}
+
+/* ⭐ MIT VORLESEN */
+function openModal(type){
+
+ let html = "";
+ let speakText = "";
+
+ if(type==="impressum"){
+
+ html = `
+ <div class="modal-title">Impressum</div>
+
+ © 2026 Ella Pinorella Verlag<br><br>
+
+ Angaben gemäß § 5 TMG:<br>
+ Ella Pinorella Verlag<br>
+ Deutschland<br><br>
+
+ Verantwortlich für den Inhalt:<br>
+ Katharina Schütz<br><br>
+
+ <b>Urheberrecht:</b><br>
+ Diese Hörbuch-App sowie Inhalte und Design sind geschützt.
+ Nutzung nur zu privaten Testzwecken erlaubt.
+ `;
+
+ speakText =
+ "Impressum... © 2026 Ella Pinorella Verlag... " +
+ "Angaben gemäß Paragraph fünf Telemediengesetz... " +
+ "Ella Pinorella Verlag Deutschland... " +
+ "Verantwortlich für den Inhalt Katharina Schütz... " +
+ "Urheberrecht... Diese Hörbuch App ist geschützt... Nutzung nur zu privaten Testzwecken erlaubt.";
+ }
+
+ if(type==="datenschutz"){
+
+ html = `
+ <div class="modal-title">Datenschutz</div>
+
+ Diese App verarbeitet keine personenbezogenen Daten.<br><br>
+
+ Es werden keine Daten gespeichert oder übertragen.<br><br>
+
+ <b>Hinweis:</b><br>
+ Sprachausgabe erfolgt über das Gerät.<br><br>
+
+ <b>Urheberrecht:</b><br>
+ Inhalte und Technik sind geschützt.
+ `;
+
+ speakText =
+ "Datenschutz... Diese App verarbeitet keine personenbezogenen Daten... " +
+ "Es werden keine Daten gespeichert oder übertragen... " +
+ "Hinweis... Die Sprachausgabe erfolgt über das Gerät... " +
+ "Urheberrecht... Inhalte und Technik sind geschützt.";
+ }
+
+ document.getElementById("modalContent").innerHTML = html;
+ document.getElementById("modal").style.display="flex";
+
+ speechSynthesis.cancel();
+
+ let u = new SpeechSynthesisUtterance(speakText);
+ u.lang = "de-DE";
+ u.rate = 0.95;
+ u.pitch = 0.95;
+
+ speechSynthesis.speak(u);
+}
+
+function closeModal(){
+ document.getElementById("modal").style.display="none";
+ speechSynthesis.cancel();
+}
+
+/* Schnee */
+const v=document.querySelector(".visual");
+for(let i=0;i<30;i++){
+ let s=document.createElement("div");
+ s.className="snowflake";
+ s.style.left=Math.random()*100+"%";
+ s.style.animationDuration=(3+Math.random()*4)+"s";
+ v.appendChild(s);
+}
+
+render();
+update();
+
+</script>
+
+</body>
+</html>
